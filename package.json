@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "create-react-class": "^15.6.0",
+    "glamor": "^2.20.39",
+    "glamorous": "^4.0.0",
     "prop-types": "^15.5.8",
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
