@@ -1,7 +1,9 @@
 import './App.css';
 
+import createClass from 'create-react-class';
 import React from 'react';
 import { Route } from 'react-router-dom';
+import { Observable } from 'rxjs/Rx';
 
 import * as BooksAPI from './BooksAPI';
 import BookList from './components/BookList';
@@ -14,12 +16,27 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
-class BooksApp extends React.Component {
-  state = { books: [] };
+const BooksApp = createClass({
+  getInitialState() {
+    return { books: [] };
+  },
 
   componentDidMount() {
-    BooksAPI.getAll().then(books => this.setState({ books }));
-  }
+    Observable.defer(() => BooksAPI.getAll())
+      .map(books => this.setState({ books }))
+      .toPromise();
+  },
+
+  onBookShelfChange(book, shelf) {
+    const books = this.state.books
+      .reduce(
+        (books, b) => [...books, b.id === book.id ? { ...book, shelf } : b],
+        []
+      )
+      .filter(book => book.shelf !== 'none');
+
+    this.setState(() => ({ books }));
+  },
 
   render() {
     const { books } = this.state;
@@ -29,13 +46,17 @@ class BooksApp extends React.Component {
         <Route
           exact
           path={routes.ROOT}
-          render={() => <BookList books={books} />}
+          render={() =>
+            <BookList
+              books={books}
+              onBookShelfChange={this.onBookShelfChange}
+            />}
         />
 
         <Route path="/search" component={SearchBooks} />
       </div>
     );
   }
-}
+});
 
 export default BooksApp;
