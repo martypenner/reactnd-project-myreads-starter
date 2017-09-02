@@ -67,7 +67,11 @@ const BooksApp = createClass({
         ...booksByShelf,
         [book.shelf]: [...(booksByShelf[book.shelf] || []), book]
       }),
-      {}
+      {
+        currentlyReading: [],
+        wantToRead: [],
+        read: []
+      }
     );
 
     return (
