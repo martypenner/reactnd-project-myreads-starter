@@ -19,11 +19,16 @@ if (process.env.NODE_ENV === 'development') {
 
 const BooksApp = createClass({
   getInitialState() {
-    return { books: [], areBooksFetched: false, isUpdating: false };
+    return {
+      books: [],
+      searchResults: [],
+      areBooksFetched: false,
+      isUpdating: false
+    };
   },
 
   componentDidMount() {
-    Observable.defer(() => BooksAPI.getAll()).subscribe(books =>
+    BooksAPI.getAll().then(books =>
       this.setState({ books, areBooksFetched: true })
     );
   },
@@ -32,8 +37,8 @@ const BooksApp = createClass({
     // Note: I'm treating the server as the source of truth for book order.
     // Initially, I was optimistically updating state, and updating again
     // when the server responded. However, this caused books to flicker
-    // to a different order. I haven't determined what criteria the server
-    // is sorting by, so I've left out optimistic updates.
+    // to a different order. I ran out of time to find a way to avoid
+    // this.
 
     Observable.defer(() => BooksAPI.update(book, shelf))
       .map(bookIdsByShelf => ({
@@ -60,8 +65,19 @@ const BooksApp = createClass({
       .subscribe(state => this.setState(state));
   },
 
+  onSearch(searchTerm) {
+    if (searchTerm.trim() === '') {
+      this.setState({ searchResults: [] });
+      return;
+    }
+
+    BooksAPI.search(searchTerm, 100).then(searchResults =>
+      this.setState({ searchResults })
+    );
+  },
+
   render() {
-    const { books, areBooksFetched, isUpdating } = this.state;
+    const { books, searchResults, areBooksFetched, isUpdating } = this.state;
     const booksByShelf = books.reduce(
       (booksByShelf, book) => ({
         ...booksByShelf,
@@ -92,7 +108,16 @@ const BooksApp = createClass({
             )}
         />
 
-        <Route path="/search" component={SearchBooks} />
+        <Route
+          path="/search"
+          render={() => (
+            <SearchBooks
+              results={searchResults}
+              onChange={this.onSearch}
+              onBookShelfChange={this.onBookShelfChange}
+            />
+          )}
+        />
       </div>
     );
   }
