@@ -8,6 +8,7 @@ import { Observable } from 'rxjs/Rx';
 import * as BooksAPI from './BooksAPI';
 import BookList from './components/BookList';
 import SearchBooks from './components/SearchBooks';
+import Spinner from './components/Spinner';
 import routes from './constants/routes';
 
 if (process.env.NODE_ENV === 'development') {
@@ -23,11 +24,12 @@ const BooksApp = createClass({
 
   componentDidMount() {
     Observable.defer(() => BooksAPI.getAll())
-      .map(books => this.setState({ books }))
+      .do(books => this.setState({ books }))
       .toPromise();
   },
 
   onBookShelfChange(book, shelf) {
+    // Optimistically update UI
     const books = this.state.books
       .reduce(
         (books, b) => [...books, b.id === book.id ? { ...book, shelf } : b],
@@ -40,6 +42,13 @@ const BooksApp = createClass({
 
   render() {
     const { books } = this.state;
+    const booksByShelf = books.reduce(
+      (booksByShelf, book) => ({
+        ...booksByShelf,
+        [book.shelf]: [...(booksByShelf[book.shelf] || []), book]
+      }),
+      {}
+    );
 
     return (
       <div className="app">
@@ -47,10 +56,14 @@ const BooksApp = createClass({
           exact
           path={routes.ROOT}
           render={() =>
-            <BookList
-              books={books}
-              onBookShelfChange={this.onBookShelfChange}
-            />}
+            books.length === 0 ? (
+              <Spinner />
+            ) : (
+              <BookList
+                booksByShelf={booksByShelf}
+                onBookShelfChange={this.onBookShelfChange}
+              />
+            )}
         />
 
         <Route path="/search" component={SearchBooks} />
