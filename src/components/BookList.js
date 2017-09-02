@@ -3,8 +3,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import routes from '../constants/routes';
-import Book from './Book';
-import Shelf from './Shelf';
 
 const shelfToTitleMap = {
   currentlyReading: 'Currently Reading',
@@ -34,16 +32,60 @@ const BookList = createClass({
         <div className="list-books-content">
           <div>
             {shelves.map(shelf => (
-              <Shelf key={shelf} name={shelfToTitleMap[shelf]}>
-                {booksByShelf[shelf].map(book => (
-                  <Book
-                    key={book.id}
-                    book={book}
-                    shelves={shelves}
-                    onBookShelfChange={onBookShelfChange}
-                  />
-                ))}
-              </Shelf>
+              <div key={shelf} className="bookshelf">
+                <h2 className="bookshelf-title">{shelfToTitleMap[shelf]}</h2>
+
+                <div className="bookshelf-books">
+                  <ol className="books-grid">
+                    {booksByShelf[shelf].map(book => (
+                      <li key={book.id}>
+                        <div className="book">
+                          <div className="book-top">
+                            <div
+                              className="book-cover"
+                              style={{
+                                width: 128,
+                                height: 193,
+                                backgroundImage: `url("${book.imageLinks
+                                  .smallThumbnail}")`
+                              }}
+                            />
+
+                            <div className="book-shelf-changer">
+                              <select
+                                value={book.shelf}
+                                onChange={e =>
+                                  onBookShelfChange(book, e.target.value)}>
+                                <option value="none" disabled>
+                                  Move to...
+                                </option>
+
+                                {shelves.map(shelf => (
+                                  <option key={shelf} value={shelf}>
+                                    {shelfToTitleMap[shelf]}
+                                  </option>
+                                ))}
+
+                                <option value="none">None</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="book-title">{book.title}</div>
+
+                          <div className="book-authors">
+                            {book.authors.map(
+                              (author, i) =>
+                                author +
+                                (i < book.authors.length - 1 ? ', ' : '')
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
             ))}
           </div>
         </div>

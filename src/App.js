@@ -29,17 +29,33 @@ const BooksApp = createClass({
   },
 
   onBookShelfChange(book, shelf) {
-    // Optimistically update UI
-    const books = this.state.books
-      .reduce(
-        (books, b) => [...books, b.id === book.id ? { ...book, shelf } : b],
-        []
-      )
-      .filter(book => book.shelf !== 'none');
-
-    this.setState(() => ({ books }));
+    // Note: I'm treating the server as the source of truth for book order.
+    // Initially, I was optimistically updating state, and updating again
+    // when the server responded. However, this caused books to flicker
+    // to a different order. I haven't determined what criteria the server
+    // is sorting by, so I've left out optimistic updates.
 
     Observable.defer(() => BooksAPI.update(book, shelf))
+      .map(bookIdsByShelf =>
+        // This reduce is a bit ugly, and has the N+1 problem, but given
+        // that updates happen infrequently and on very small numbers,
+        // I chose to leave this as-is rather than force more frequent
+        // transformation in the render method.
+        Object.entries(bookIdsByShelf).reduce(
+          (acc, [shelf, ids]) => [
+            ...acc,
+            ...ids.reduce(
+              (acc, id) => [
+                ...acc,
+                { ...this.state.books.find(book => book.id === id), shelf }
+              ],
+              []
+            )
+          ],
+          []
+        )
+      )
+      .do(books => this.setState({ books }))
       .toPromise();
   },
 
