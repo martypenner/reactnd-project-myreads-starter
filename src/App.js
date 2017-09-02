@@ -19,13 +19,13 @@ if (process.env.NODE_ENV === 'development') {
 
 const BooksApp = createClass({
   getInitialState() {
-    return { books: [] };
+    return { books: [], areBooksFetched: false, isUpdating: false };
   },
 
   componentDidMount() {
-    Observable.defer(() => BooksAPI.getAll())
-      .do(books => this.setState({ books }))
-      .toPromise();
+    Observable.defer(() => BooksAPI.getAll()).subscribe(books =>
+      this.setState({ books, areBooksFetched: true })
+    );
   },
 
   onBookShelfChange(book, shelf) {
@@ -36,12 +36,12 @@ const BooksApp = createClass({
     // is sorting by, so I've left out optimistic updates.
 
     Observable.defer(() => BooksAPI.update(book, shelf))
-      .map(bookIdsByShelf =>
+      .map(bookIdsByShelf => ({
         // This reduce is a bit ugly, and has the N+1 problem, but given
         // that updates happen infrequently and on very small numbers,
         // I chose to leave this as-is rather than force more frequent
         // transformation in the render method.
-        Object.entries(bookIdsByShelf).reduce(
+        books: Object.entries(bookIdsByShelf).reduce(
           (acc, [shelf, ids]) => [
             ...acc,
             ...ids.reduce(
@@ -53,14 +53,15 @@ const BooksApp = createClass({
             )
           ],
           []
-        )
-      )
-      .do(books => this.setState({ books }))
-      .toPromise();
+        ),
+        isUpdating: false
+      }))
+      .startWith({ isUpdating: true })
+      .subscribe(state => this.setState(state));
   },
 
   render() {
-    const { books } = this.state;
+    const { books, areBooksFetched, isUpdating } = this.state;
     const booksByShelf = books.reduce(
       (booksByShelf, book) => ({
         ...booksByShelf,
@@ -71,17 +72,19 @@ const BooksApp = createClass({
 
     return (
       <div className="app">
+        {isUpdating && <Spinner />}
+
         <Route
           exact
           path={routes.ROOT}
           render={() =>
-            books.length === 0 ? (
-              <Spinner />
-            ) : (
+            areBooksFetched ? (
               <BookList
                 booksByShelf={booksByShelf}
                 onBookShelfChange={this.onBookShelfChange}
               />
+            ) : (
+              <Spinner />
             )}
         />
 
