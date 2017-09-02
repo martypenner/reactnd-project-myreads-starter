@@ -38,6 +38,9 @@ const BooksApp = createClass({
       .filter(book => book.shelf !== 'none');
 
     this.setState(() => ({ books }));
+
+    Observable.defer(() => BooksAPI.update(book, shelf))
+      .toPromise();
   },
 
   render() {
