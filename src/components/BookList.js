@@ -18,6 +18,10 @@ const shelfSortOrder = {
 const sortShelves = shelves =>
   shelves.sort((a, b) => shelfSortOrder[a] - shelfSortOrder[b]);
 
+const EmptyShelf = () => (
+  <div style={{ color: '#999' }}>You don't have any books on this shelf</div>
+);
+
 const BookList = createClass({
   render() {
     const { booksByShelf, onBookShelfChange } = this.props;
@@ -37,6 +41,8 @@ const BookList = createClass({
 
                 <div className="bookshelf-books">
                   <ol className="books-grid">
+                    {booksByShelf[shelf].length === 0 && <EmptyShelf />}
+
                     {booksByShelf[shelf].map(book => (
                       <li key={book.id}>
                         <div className="book">
