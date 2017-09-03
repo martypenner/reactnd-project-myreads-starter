@@ -6,13 +6,8 @@ import routes from '../constants/routes';
 import Book from './Book';
 
 const SearchBooks = createClass({
-  onChange(searchTerm) {
-    this.setState({ value: searchTerm });
-    this.props.onChange(searchTerm);
-  },
-
   render() {
-    const { results, shelves, onBookShelfChange } = this.props;
+    const { searchText, results, shelves, onBookShelfChange, onSearchTextChange } = this.props;
 
     return (
       <div className="search-books">
@@ -25,7 +20,8 @@ const SearchBooks = createClass({
             <input
               type="text"
               placeholder="Search by title or author"
-              onChange={e => this.onChange(e.target.value)}
+              value={searchText}
+              onChange={e => onSearchTextChange(e.target.value)}
             />
           </div>
         </div>

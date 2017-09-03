@@ -35,6 +35,7 @@ const BooksApp = createClass({
   getInitialState() {
     return {
       books: [],
+      searchText: '',
       searchResults: [],
       areBooksFetched: false,
       isUpdating: false
@@ -61,19 +62,27 @@ const BooksApp = createClass({
       .subscribe(state => this.setState(state));
   },
 
-  onSearch(searchTerm) {
-    if (searchTerm.trim() === '') {
+  onSearch(searchText) {
+    this.setState({ searchText });
+
+    if (searchText.trim() === '') {
       this.setState({ searchResults: [] });
       return;
     }
 
-    BooksAPI.search(searchTerm, 100).then(searchResults =>
-      this.setState({ searchResults })
-    );
+    BooksAPI.search(searchText)
+      .then(searchResults => (searchResults.error == null ? searchResults : []))
+      .then(searchResults => this.setState({ searchResults }));
   },
 
   render() {
-    const { books, searchResults, areBooksFetched, isUpdating } = this.state;
+    const {
+      books,
+      searchText,
+      searchResults,
+      areBooksFetched,
+      isUpdating
+    } = this.state;
     const booksByShelf = books.reduce(
       (booksByShelf, book) => ({
         ...booksByShelf,
@@ -114,9 +123,10 @@ const BooksApp = createClass({
           path="/search"
           render={() => (
             <SearchBooks
+              searchText={searchText}
               results={searchResults}
               shelves={shelves}
-              onChange={this.onSearch}
+              onSearchTextChange={this.onSearch}
               onBookShelfChange={this.onBookShelfChange}
             />
           )}
