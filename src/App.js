@@ -17,6 +17,20 @@ if (process.env.NODE_ENV === 'development') {
   );
 }
 
+const shelfSortOrder = {
+  currentlyReading: 0,
+  wantToRead: 1,
+  read: 2
+};
+const shelfToTitleMap = {
+  currentlyReading: 'Currently Reading',
+  wantToRead: 'Want to Read',
+  read: 'Read'
+};
+
+const sortShelves = shelves =>
+  shelves.sort((a, b) => shelfSortOrder[a] - shelfSortOrder[b]);
+
 const BooksApp = createClass({
   getInitialState() {
     return {
@@ -41,26 +55,8 @@ const BooksApp = createClass({
     // this.
 
     Observable.defer(() => BooksAPI.update(book, shelf))
-      .map(bookIdsByShelf => ({
-        // This reduce is a bit ugly, and has the N+1 problem, but given
-        // that updates happen infrequently and on very small numbers,
-        // I chose to leave this as-is rather than force more frequent
-        // transformation in the render method.
-        books: Object.entries(bookIdsByShelf).reduce(
-          (acc, [shelf, ids]) => [
-            ...acc,
-            ...ids.reduce(
-              (acc, id) => [
-                ...acc,
-                { ...this.state.books.find(book => book.id === id), shelf }
-              ],
-              []
-            )
-          ],
-          []
-        ),
-        isUpdating: false
-      }))
+      .switchMap(() => BooksAPI.getAll())
+      .map(books => ({ books, isUpdating: false }))
       .startWith({ isUpdating: true })
       .subscribe(state => this.setState(state));
   },
@@ -89,6 +85,11 @@ const BooksApp = createClass({
         read: []
       }
     );
+    // Build a list of tuples of `["shelfName", "humanShelfName"]`
+    const shelves = sortShelves(Object.keys(booksByShelf)).map(shelf => [
+      shelf,
+      shelfToTitleMap[shelf]
+    ]);
 
     return (
       <div className="app">
@@ -101,6 +102,7 @@ const BooksApp = createClass({
             areBooksFetched ? (
               <BookList
                 booksByShelf={booksByShelf}
+                shelves={shelves}
                 onBookShelfChange={this.onBookShelfChange}
               />
             ) : (
@@ -113,6 +115,7 @@ const BooksApp = createClass({
           render={() => (
             <SearchBooks
               results={searchResults}
+              shelves={shelves}
               onChange={this.onSearch}
               onBookShelfChange={this.onBookShelfChange}
             />

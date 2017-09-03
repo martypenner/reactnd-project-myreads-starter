@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import routes from '../constants/routes';
+import Book from './Book';
 
 const SearchBooks = createClass({
   onChange(searchTerm) {
@@ -11,7 +12,7 @@ const SearchBooks = createClass({
   },
 
   render() {
-    const { results, onBookShelfChange } = this.props;
+    const { results, shelves, onBookShelfChange } = this.props;
 
     return (
       <div className="search-books">
@@ -31,42 +32,12 @@ const SearchBooks = createClass({
         <div className="search-books-results">
           <ol className="books-grid">
             {results.map(book => (
-              <li key={book.id}>
-                <div className="book">
-                  <div className="book-top">
-                    <div
-                      className="book-cover"
-                      style={{
-                        width: 128,
-                        height: 193,
-                        backgroundImage: `url("${book.imageLinks
-                          .smallThumbnail}")`
-                      }}
-                    />
-
-                    <div className="book-shelf-changer">
-                      <select
-                        value={book.shelf}
-                        onChange={e => onBookShelfChange(book, e.target.value)}>
-                        <option value="none" disabled>
-                          Move to...
-                        </option>
-
-                        <option value="none">None</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="book-title">{book.title}</div>
-
-                  <div className="book-authors">
-                    {book.authors && book.authors.map(
-                      (author, i) =>
-                        author + (i < book.authors.length - 1 ? ', ' : '')
-                    )}
-                  </div>
-                </div>
-              </li>
+              <Book
+                key={book.id}
+                book={book}
+                shelves={shelves}
+                onBookShelfChange={onBookShelfChange}
+              />
             ))}
           </ol>
         </div>
