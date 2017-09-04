@@ -4,6 +4,10 @@ import React from 'react';
 const Book = createClass({
   render() {
     const { book, shelves, onBookShelfChange } = this.props;
+    const backgroundImageStyle =
+      book.imageLinks && book.imageLinks.smallThumbnail
+        ? { backgroundImage: `url("${book.imageLinks.smallThumbnail}")` }
+        : null;
 
     return (
       <li key={book.id}>
@@ -14,7 +18,7 @@ const Book = createClass({
               style={{
                 width: 128,
                 height: 193,
-                backgroundImage: `url("${book.imageLinks.smallThumbnail}")`
+                ...backgroundImageStyle
               }}
             />
 
