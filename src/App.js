@@ -31,14 +31,21 @@ const shelfToTitleMap = {
 const sortShelves = shelves =>
   shelves.sort((a, b) => shelfSortOrder[a] - shelfSortOrder[b]);
 
+const addShelvesToSearchResults = (searchResults, books) =>
+  searchResults.map(result => ({
+    ...result,
+    shelf: (books.find(book => book.id === result.id) || {
+      shelf: 'none'
+    }).shelf
+  }));
+
 const BooksApp = createClass({
   getInitialState() {
     return {
       books: [],
       searchText: '',
       searchResults: [],
-      areBooksFetched: false,
-      isUpdating: false
+      areBooksFetched: false
     };
   },
 
@@ -49,17 +56,32 @@ const BooksApp = createClass({
   },
 
   onBookShelfChange(book, shelf) {
-    // Note: I'm treating the server as the source of truth for book order.
-    // Initially, I was optimistically updating state, and updating again
-    // when the server responded. However, this caused books to flicker
-    // to a different order. I ran out of time to find a way to avoid
-    // this.
+    let oldBooks;
+    let oldResults;
 
-    Observable.defer(() => BooksAPI.update(book, shelf))
-      .switchMap(() => BooksAPI.getAll())
-      .map(books => ({ books, isUpdating: false }))
-      .startWith({ isUpdating: true })
-      .subscribe(state => this.setState(state));
+    this.setState(({ books, searchResults }) => {
+      oldBooks = books;
+      oldResults = searchResults;
+
+      const updatedBook = { ...book, shelf };
+      const updatedBooks = books
+        .reduce(
+          (acc, current) => (current.id === book.id ? acc : [...acc, current]),
+          []
+        )
+        .concat(updatedBook)
+        .filter(book => book.shelf !== 'none');
+
+      return {
+        books: updatedBooks,
+        searchResults: addShelvesToSearchResults(searchResults, updatedBooks)
+      };
+    });
+
+    // Note: possible race condition if this completes before the previous setState call finishes
+    BooksAPI.update(book, shelf).catch(() =>
+      this.setState({ books: oldBooks, searchResults: oldResults })
+    );
   },
 
   onSearch(searchText) {
@@ -70,19 +92,19 @@ const BooksApp = createClass({
       return;
     }
 
-    BooksAPI.search(searchText)
-      .then(searchResults => (searchResults.error == null ? searchResults : []))
-      .then(searchResults => this.setState({ searchResults }));
+    // Search for books, returning an empty list for errors.
+    // Then find the the shelf that book is on by searching our existing
+    // list. This feels a bit non-performant, as it exhibits N+1, but is
+    // not likely to be a real problem until the books number in the
+    // thousands.
+    Observable.defer(() => BooksAPI.search(searchText))
+      .map(searchResults => (searchResults.error == null ? searchResults : []))
+      .map(results => addShelvesToSearchResults(results, this.state.books))
+      .subscribe(searchResults => this.setState({ searchResults }));
   },
 
   render() {
-    const {
-      books,
-      searchText,
-      searchResults,
-      areBooksFetched,
-      isUpdating
-    } = this.state;
+    const { books, searchText, searchResults, areBooksFetched } = this.state;
     const booksByShelf = books.reduce(
       (booksByShelf, book) => ({
         ...booksByShelf,
@@ -102,8 +124,6 @@ const BooksApp = createClass({
 
     return (
       <div className="app">
-        {isUpdating && <Spinner />}
-
         <Route
           exact
           path={routes.ROOT}

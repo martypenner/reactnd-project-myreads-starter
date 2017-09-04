@@ -6,8 +6,18 @@ import routes from '../constants/routes';
 import Book from './Book';
 
 const SearchBooks = createClass({
+  componentDidMount() {
+    this.props.onSearchTextChange(this.props.searchText);
+  },
+
   render() {
-    const { searchText, results, shelves, onBookShelfChange, onSearchTextChange } = this.props;
+    const {
+      searchText,
+      results,
+      shelves,
+      onBookShelfChange,
+      onSearchTextChange
+    } = this.props;
 
     return (
       <div className="search-books">

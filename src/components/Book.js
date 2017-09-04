@@ -25,7 +25,6 @@ const Book = createClass({
             <div className="book-shelf-changer">
               <select
                 value={book.shelf}
-                defaultValue="none"
                 onChange={e => onBookShelfChange(book, e.target.value)}>
                 <option value="none" disabled>
                   Move to...
